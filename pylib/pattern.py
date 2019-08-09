@@ -96,6 +96,7 @@ def is_match(incoming, matcher):
             return h(incoming, matcher)
     return DEFAULT
 
+"""
 def factorial(n):
     return match(
         n,
@@ -132,3 +133,4 @@ print(all_pats(20.0))
 print(all_pats(lambda x: x+4)(0))
 
 print(type(_[1:2]))
+"""

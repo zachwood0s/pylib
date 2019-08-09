@@ -37,5 +37,5 @@ def patch_module_ast(module, trans=AssignTransformer):
 
 def patch_module(module, trans=AssignTransformer):
     patched_ast = patch_module_ast(module)
-    patched_code = compile(patched_ast, module.__name__, "exec")
+    patched_code = compile(patched_ast, module.__file__, "exec")
     exec(patched_code, module.__dict__)
