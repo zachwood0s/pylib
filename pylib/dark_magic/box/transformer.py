@@ -1,71 +1,48 @@
 import ast
+from pylib.pattern import match, _
+import astor
 
 # __box__(self, right_side):
 # __unbox__(self, left_side):
 
 __all__ = [
-    'gen_assign_checker_ast',
     'AssignTransformer'
-
 ]
 
-def gen_method_call(obj_name, method_name, *args):
+def gen_method_call(node, method_name, *args):
   return ast.Call(
     func=ast.Attribute(
-      value=ast.Name(id=obj_name, ctx=ast.Load()),
+      value=node,
       attr=method_name,
       ctx=ast.Load()
     ),
-    args=args
+    args=list(args),
+    keywords=[],
+    startargs=None,
+    kwargs=None
   )
 
 def gen_box_call(obj_name, rhs):
   return gen_method_call(obj_name, "__box__", rhs) 
 
-def gen_unbox_call(obj_name, lhs):
-  return gen_method_call(obj_name, "__unbox__", lhs)
+def gen_unbox_call(node):
+  return gen_method_call(node, "__unbox__")
 
-def gen_assign(obj_name, rhs):
-  return ast.Assign(
-    targets=[ast.Name(id=obj_name, ctx=ast.Store())],
-    value=rhs
+def gen_rhs(rhs):
+  return ast.IfExp(
+    test=ast.Call(
+      func=ast.Name(id='hasattr', ctx=ast.Load()),
+      args=[
+        rhs,
+        ast.Str(s='__unbox__'),
+      ],
+      keywords=[],
+      startargs=None,
+      kwargs=None
+    ),
+    body=gen_unbox_call(rhs),
+    orelse=rhs
   )
-
-
-def gen_assign_checker_ast(node):
-    targets = [t.id for t in node.targets]
-    obj_name = node.value.id
-
-    return ast.If(
-        test=ast.Call(
-            func=ast.Name(id='hasattr', ctx=ast.Load()),
-            args=[
-                ast.Name(id=obj_name, ctx=ast.Load()),
-                ast.Str(s='__assign__'),
-            ],
-            keywords=[],
-            starargs=None,
-            kwargs=None
-        ),
-        body=[
-            ast.Assign(
-                targets=[ast.Name(id=target, ctx=ast.Store())],
-                value=ast.Call(
-                    func=ast.Attribute(
-                        value=ast.Name(id=obj_name, ctx=ast.Load()),
-                        attr='__assign__',
-                        ctx=ast.Load()
-                    ),
-                    args=[ast.Str(s=target)],
-                    keywords=[],
-                    starargs=None,
-                    kwargs=None
-                )
-            )
-            for target in targets],
-        orelse=[]
-    )
-
 
 class AssignTransformer(ast.NodeTransformer):
     def generic_visit(self, node):
@@ -73,9 +50,9 @@ class AssignTransformer(ast.NodeTransformer):
         return node
 
     def visit_Assign(self, node):
-        if not isinstance(node.value, ast.Name):
-            return node
-        new_node = gen_assign_checker_ast(node)
-        ast.copy_location(new_node, node)
-        ast.fix_missing_locations(new_node)
-        return new_node
+        rhs = node.value
+        new_rhs = gen_rhs(rhs)
+        ast.copy_location(new_rhs, node)
+        ast.fix_missing_locations(new_rhs)
+        node.value = new_rhs
+        return node

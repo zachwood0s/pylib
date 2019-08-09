@@ -1,11 +1,14 @@
 
 
 class Box:
-  def __init__(self):
-    self.assigned = None
+  def __init__(self, value):
+    self.boxed_value = value
 
-  def __assign__(self, var):
-    self.assigned = True
+  def __unbox__(self):
+    return self.boxed_value
+
+  def __box__(self, new_val):
+    self.boxed_value = new_val
   
 def do_assignment(box):
   a = box
