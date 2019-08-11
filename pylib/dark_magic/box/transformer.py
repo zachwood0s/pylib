@@ -69,6 +69,13 @@ def gen_rhs(rhs):
     orelse=rhs
   )
 
+def gen_except_handler(body):
+  return ast.ExceptHandler(
+    type=None,
+    name=None,
+    body=[body]
+  )
+
 def convert_assign_py2(lhs, rhs):
   loaded = convert_name(lhs, ast.Load())
   return ast.TryExcept(
@@ -76,13 +83,7 @@ def convert_assign_py2(lhs, rhs):
       ast.Expr(loaded),
     ],
     handlers=[
-      ast.ExceptHandler(
-        type=None,
-        name=None,
-        body=[
-          ast.Assign([lhs], rhs),
-        ]
-      )
+      gen_except_handler(ast.Assign([lhs], rhs))
     ],
     orelse=[
       ast.If(
@@ -98,7 +99,27 @@ def convert_assign_py2(lhs, rhs):
   )
 
 def convert_assign_py3(lhs, rhs):
-  pass
+  loaded = convert_name(lhs, ast.Load())
+  return ast.Try(
+    body=[
+      ast.Expr(loaded),
+    ],
+    handlers=[
+      gen_except_handler(ast.Assign([lhs], rhs))
+    ],
+    orelse=[
+      ast.If(
+        test=gen_hasattr_call(loaded, BOX_SIGNATURE),
+        body=[
+          ast.Expr(gen_box_call(loaded, rhs)),
+        ],
+        orelse=[
+          ast.Assign([lhs], rhs),
+        ]
+      )
+    ],
+    finalbody=[]
+  )
 
 def convert_assign(lhs, rhs):
   return convert_assign_py3(lhs, rhs) if six.PY3 else convert_assign_py2(lhs, rhs)
