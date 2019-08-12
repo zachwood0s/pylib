@@ -1,4 +1,4 @@
-from pylib.dark_magic.box.patch import patch_module, patch_module_ast
+from pylib.dark_magic.box import auto_unbox
 import boxed_module
 import unittest
 import ast
@@ -7,7 +7,19 @@ import astor
 import random
 import timeit
 
-patch_module(boxed_module)
+auto_unbox(boxed_module)
+
+"""
+def patch_function(func):
+    source = inspect.getsource(func) 
+    module = inspect.getmodule(func)
+    tree = ast.parse(source)
+    patched_ast = patch_node_ast(tree)
+    patched_code = compile(patched_ast, module.__file__, "exec")
+    print(astor.to_source(patched_ast))
+    exec(patched_code, module.__dict__)
+    return func
+"""
 
 class Box:
   def __init__(self, value):
@@ -39,6 +51,12 @@ def count(counter):
   d = counter.__unbox__()
   return a, b, c, d
 
+def count_patched(counter):
+    a = b = c = counter
+    return a, b, c
+
+auto_unbox(count_patched)
+
 class RandomVal:
     def __unbox__(self):
         return random.randint(0, 10)
@@ -51,25 +69,14 @@ def test_assign():
 
     counter = Counter(0)
     counts = boxed_module.count(counter)
-
+    print(counts)
+    counts = count_patched(counter)
     print(counts)
 
     r = RandomVal()
     boxed_module.do_random(r)
-    # print(timeit.timeit(lambda: boxed_module.count(Counter(0)), number=10000))
-    # print(timeit.timeit(lambda: count(Counter(0)), number=10000))
-
-
-
-class Fake(object):
-    def __init__(self, value):
-        try:
-            self.boxed_value
-        except:
-            self.boxed_value = value
-        else:
-            print("do stuff")
+    count(Counter(0))
+    #print(inspect.getsource(inspect.getmodule(test_assign)))
     
 if __name__ == "__main__":
-    f = Fake(20)
     test_assign()

@@ -11,10 +11,7 @@ def do_assignment(box, new_val):
   box = new_val
 
 def count(counter):
-  a = counter 
-  b = counter
-  c = counter
-  d = counter
+  a = b = c = d = counter 
   return a, b, c, d
 
 def do_random(random_value):
