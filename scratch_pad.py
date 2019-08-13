@@ -62,6 +62,22 @@ class RandomVal:
         return random.randint(0, 10)
         
 
+def filter_(func):
+    def filter_inner(seq):
+        return filter(func, seq)
+    return filter_inner
+
+def map_(func):
+    def map_inner(seq):
+        return map(func, seq)
+    return map_inner
+
+def pipe(data, *funcs):
+    for func in funcs:
+        data = func(data)
+    
+    return data
+
 def test_assign():
     box = Box(20) 
     value = boxed_module.do_assignment(box, 40)
@@ -76,7 +92,24 @@ def test_assign():
     r = RandomVal()
     boxed_module.do_random(r)
     count(Counter(0))
+    lst = [10, 12, 30]
+    double = lambda x: x*2
+    p = pipe(
+        lst,
+        map_(double),
+        filter_(lambda x: x > 20),
+        list
+    )
+    print(p)
     #print(inspect.getsource(inspect.getmodule(test_assign)))
+
+
+
+
+
+
+
+
     
 if __name__ == "__main__":
     test_assign()
